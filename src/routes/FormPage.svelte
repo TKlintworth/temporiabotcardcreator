@@ -11,54 +11,54 @@
     let previewImage;
     let qrCodeURL = "";
     let qrCodeImage;
-    let canvas;
 
     import QRCode from "qrcode";
-    import { fabric } from 'fabric';
-
-    import { onMount } from 'svelte';
+    import axios from "axios";
 
     const handleFileChange = event => {
-        const file = event.target.files[0];
+        image = event.target.files[0];
+        //const file = event.target.files[0];
         const reader = new FileReader();
         reader.onload = e => {
-        previewImage = e.target.result;
-        updateCanvasWithQRCode();
+            previewImage = e.target.result;
         };
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(image);
     };
 
     const handleFormSubmit = async () => {
+        console.warn("Form submitted!");
         const qrCodeString = `${season}_${name}`;
         qrCodeImage = await QRCode.toDataURL(qrCodeString);
-        updateCanvasWithQRCode();
+        qrCodeURL = qrCodeImage;
+        //hit the server with the form data and the endpoint to create the card
+        //then, display the card
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('frequency', frequency);
+        formData.append('description', description);
+        formData.append('value', crystalValue);
+        formData.append('season', season);
+        formData.append('cardId', cardID);
+        formData.append('image', image);  // Assuming 'image' is a File object
+
+        try {
+            const response = await axios.post('http://localhost:5000/create-card', formData);
+            const newCard = response.data;
+            console.log(newCard);
+        } catch (error) {
+            console.error('Error:', error.response.statusText);
+        }
+
     };
 
-    const updateCanvasWithQRCode = () => {
-        if (!previewImage || !qrCodeImage || !canvas) return;
-
-        fabric.Image.fromURL(previewImage, function(img1) {
-        // scale image down, and flip it, before adding to canvas
-        img1.scale(0.5);
-        img1.set('flipX', true);
-        canvas.add(img1);
-        
-        fabric.Image.fromURL(qrCodeImage, function(img2) {
-            img2.scale(0.1);
-            img2.set({ left: 150, top: 100 });
-            canvas.add(img2);
-        });
-        });
+    const handleClick = () => {
+        console.warn("Button clicked!");
     };
 
     /* const handleFileChange = (event) => {
         image = event.target.files[0];
         previewImage = URL.createObjectURL(image);
     } */
-
-    onMount(async () => {
-        canvas = new fabric.Canvas('c');
-    });
 </script>
 
 <div class="flex flex-col items-center mt-8">
@@ -129,7 +129,7 @@
             </label>
 
             <div class="flex items-center justify-center mt-8 space-x-4">
-                <button type="submit" class="py-2 px-4 rounded bg-blue-500 text-white">{quantity > 1 ? `Create ${quantity} Cards` : 'Create Card'}</button>
+                <button on:click={handleClick} type="submit" class="py-2 px-4 rounded bg-blue-500 text-white">{quantity > 1 ? `Create ${quantity} Cards` : 'Create Card'}</button>
             </div>
 
         </form>
